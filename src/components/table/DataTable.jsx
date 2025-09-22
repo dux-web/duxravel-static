@@ -418,6 +418,8 @@ export default defineComponent({
         const scrollContainerRect = scrollContainer.value.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
 
+        const scrollbar = container.querySelector('.arco-scrollbar-track-direction-horizontal');
+
         const offset = paginationRect.bottom - scrollContainerRect.top - scrollContainerRect.height
 
         // 当分页器底部开始离开可视区域时（距离<=0）
@@ -433,10 +435,28 @@ export default defineComponent({
           page.style.boxShadow = '0 0 4px 2px #ccc'
           page.style.backgroundColor = '#fff'
           page.style.right = '16px'
+
+          if (scrollbar) {
+            scrollbar.style.position = 'fixed'
+            scrollbar.style.top = (paginationRect.top - finalOffset - 16) + 'px'
+            scrollbar.style.right = '32px'
+            scrollbar.style.left = 'inherit'
+            scrollbar.style.bottom = 'inherit'
+            scrollbar.style.width = containerRect.width + 'px'
+          }
         } else {
           page.style.top = paginationRect.top + 'px'
           page.style.boxShadow = ''
           page.style.right = '36px'
+
+          if (scrollbar) {
+            scrollbar.style.position = 'absolute'
+            scrollbar.style.top = 'inherit'
+            scrollbar.style.right = 'inherit'
+            scrollbar.style.left = 0
+            scrollbar.style.bottom = 0
+            scrollbar.style.width = '100%'
+          }
         }
         page.style.zIndex = 10
       });
