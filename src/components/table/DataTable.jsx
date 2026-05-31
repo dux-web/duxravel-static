@@ -407,6 +407,24 @@ export default defineComponent({
 
       // 使用requestAnimationFrame确保在正确时机计算
       requestAnimationFrame(() => {
+        const setFixedPosition = (element, top, left, width) => {
+          element.style.position = 'fixed'
+          element.style.top = top + 'px'
+          element.style.left = left + 'px'
+          element.style.width = width + 'px'
+
+          const rect = element.getBoundingClientRect()
+          const leftOffset = left - rect.left
+          const topOffset = top - rect.top
+
+          if (Math.abs(leftOffset) > 0.5) {
+            element.style.left = (left + leftOffset) + 'px'
+          }
+          if (Math.abs(topOffset) > 0.5) {
+            element.style.top = (top + topOffset) + 'px'
+          }
+        }
+
         const container = proxy.$refs.tab;
         if (!container) return;
 
@@ -418,7 +436,13 @@ export default defineComponent({
         const scrollContainerRect = scrollContainer.value.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
 
-        const scrollbar = container.querySelector('.arco-scrollbar-track-direction-horizontal');
+        const tableContainer = container.querySelector('.arco-table-container');
+        const tableContainerRect = tableContainer?.getBoundingClientRect();
+        const scrollbarList = tableContainer ? [...tableContainer.querySelectorAll('.arco-scrollbar-track-direction-horizontal')]
+          .filter(item => !item.closest('.app-list-small')) : [];
+        const scrollbar = scrollbarList.sort((a, b) => b.getBoundingClientRect().width - a.getBoundingClientRect().width)[0];
+        const tableHeader = props.nParams?.stickyHeader && tableContainer?.querySelector('.arco-table-header');
+        const tableHeaderRect = tableHeader?.getBoundingClientRect();
 
         const offset = paginationRect.bottom - scrollContainerRect.top - scrollContainerRect.height
 
@@ -427,6 +451,22 @@ export default defineComponent({
         const page = pagination.children[0]
 
         pagination.style.height = '32px'
+
+        if (tableHeader && tableContainerRect && tableHeaderRect) {
+          const fixedHeader = tableContainerRect.top <= scrollContainerRect.top && tableContainerRect.bottom > scrollContainerRect.top + tableHeaderRect.height;
+          if (fixedHeader) {
+            setFixedPosition(tableHeader, scrollContainerRect.top, tableContainerRect.left, tableContainerRect.width)
+            tableHeader.style.backgroundColor = '#fff'
+            tableHeader.style.zIndex = 60
+          } else {
+            tableHeader.style.position = ''
+            tableHeader.style.top = typeof props.nParams.stickyHeader === 'number' ? props.nParams.stickyHeader + 'px' : ''
+            tableHeader.style.left = ''
+            tableHeader.style.width = ''
+            tableHeader.style.backgroundColor = ''
+            tableHeader.style.zIndex = ''
+          }
+        }
 
         page.style.position = 'fixed'
         if (offset > 0) {
@@ -437,12 +477,10 @@ export default defineComponent({
           page.style.right = '16px'
 
           if (scrollbar) {
-            scrollbar.style.position = 'fixed'
-            scrollbar.style.top = (paginationRect.top - finalOffset - 16) + 'px'
-            scrollbar.style.right = '32px'
-            scrollbar.style.left = 'inherit'
+            const scrollbarTop = paginationRect.top - finalOffset - 16
+            setFixedPosition(scrollbar, scrollbarTop, tableContainerRect?.left || containerRect.left, tableContainerRect?.width || containerRect.width)
+            scrollbar.style.right = 'inherit'
             scrollbar.style.bottom = 'inherit'
-            scrollbar.style.width = containerRect.width + 'px'
           }
         } else {
           page.style.top = paginationRect.top + 'px'
